@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use vars qw($VERSION);
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 =head1 NAME
 
@@ -288,9 +288,9 @@ sub id_query {
 
 sub _do_query {
     my ($dbv,$sql,$idrequired,@args) = @_;
-    my $rowid = undef;
+    my $rowid;
 
-    return $rowid   unless($sql);
+    return  unless($sql);
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
@@ -368,7 +368,7 @@ arguments within the given list reference.
 
 sub repeat_query {
     my ($dbv,$sql,@args) = @_;
-    return  unless($sql);
+    return  unless($sql && @args);
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
@@ -449,7 +449,7 @@ sub quote {
     # Cant quote with DBD::CSV
     return $_[0]    if($dbv->{driver} =~ /csv/i);
 
-    # if the object doesnt contain a refrence to a dbh object
+    # if the object doesnt contain a reference to a dbh object
     # then we need to connect to the database
     $dbv = &_db_connect($dbv) if not $dbv->{dbh};
 
@@ -546,8 +546,7 @@ __END__
 
 =head1 SEE ALSO
 
-L<CPAN::WWW::Testers::Generator>,
-L<CPAN::WWW::Testers>,
+L<CPAN::Testers::Data::Generator>,
 L<CPAN::Testers::WWW::Statistics>
 
 F<http://www.cpantesters.org/>,
@@ -561,10 +560,10 @@ Miss Barbell Productions, L<http://www.missbarbell.co.uk/>
 
 =head1 COPYRIGHT & LICENSE
 
-  Copyright (C) 2002-2009 Barbie for Miss Barbell Productions
+  Copyright (C) 2002-2012 Barbie for Miss Barbell Productions
   All Rights Reserved.
 
   This module is free software; you can redistribute it and/or
-  modify it under the same terms as Perl itself.
+  modify it under the Artistic Licence v2.
 
 =cut
