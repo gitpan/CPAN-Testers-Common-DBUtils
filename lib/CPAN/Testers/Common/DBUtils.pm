@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use vars qw($VERSION);
-$VERSION = '0.09';
+$VERSION = '0.10';
 
 =head1 NAME
 
@@ -31,6 +31,7 @@ CPAN::Testers::Common::DBUtils - Basic Database Wrapper
   my $id = $dbi->id_query($sql,$id,$name);
   $dbi->do_query($sql,$id);
 
+  $dbi->do_rollback();  # where AutoCommit is disabled
   $dbi->do_commit();    # where AutoCommit is disabled
 
   # array iterator
@@ -159,7 +160,7 @@ sub get_query {
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
-    $dbv = &_db_connect($dbv) if not $dbv->{dbh};
+    $dbv = _db_connect($dbv) if not $dbv->{dbh};
 
     # prepare the sql statement for executing
     my $sth;
@@ -215,7 +216,7 @@ sub iterator {
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
-    $dbv = &_db_connect($dbv) if not $dbv->{dbh};
+    $dbv = _db_connect($dbv) if not $dbv->{dbh};
 
     # prepare the sql statement for executing
     my $sth;
@@ -294,7 +295,7 @@ sub _do_query {
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
-    $dbv = &_db_connect($dbv) if not $dbv->{dbh};
+    $dbv = _db_connect($dbv) if not $dbv->{dbh};
 
     if($idrequired) {
         # prepare the sql statement for executing
@@ -343,18 +344,19 @@ sub _do_query {
     return $rowid;
 }
 
-=item repeat_query(sql,<list>)
+=item repeat_query(sql,<list>,[(<arg1>), ... (<argN>)])
 
   sql - SQL statement
   <list> - values to be inserted into SQL placeholders
+  <argX> - arguments to be inserted into placeholders
 
-This method is used to store an SQL action statement, together associated
-arguments. Commonly used with statements where multiple arguments sets are
-applied to the same statement.
+This method is used to store an SQL action statement, together withe the 
+associated arguments. Commonly used with statements where multiple arguments 
+sets are applied to the same statement.
 
 =item repeat_queries()
 
-This method performs all store SQL action statements.
+This method performs all stored SQL action statements.
 
 =item repeater(sql,<list ref>)
 
@@ -372,20 +374,22 @@ sub repeat_query {
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
-    $dbv = &_db_connect($dbv) if not $dbv->{dbh};
+    $dbv = _db_connect($dbv) if not $dbv->{dbh};
 
     push @{ $dbv->{repeat}{$sql} }, \@args;
 }
 
 sub repeat_queries {
     my $dbv = shift;
-    return  unless($dbv && $dbv->{repeat});
+    return 0    unless($dbv && $dbv->{repeat});
 
+    my $rows = 0;
     for my $sql (keys %{ $dbv->{repeat} }) {
-        $dbv->repeater($sql,$dbv->{repeat}{$sql});
+        $rows += $dbv->repeater($sql,$dbv->{repeat}{$sql});
     }
 
     $dbv->{repeat} = undef;
+    return $rows;
 }
 
 sub repeater {
@@ -396,7 +400,7 @@ sub repeater {
 
     # if the object doesn't contain a reference to a dbh
     # object then we need to connect to the database
-    $dbv = &_db_connect($dbv) if not $dbv->{dbh};
+    $dbv = _db_connect($dbv) if not $dbv->{dbh};
 
     # prepare the sql statement for executing
     my $sth;
@@ -433,6 +437,17 @@ sub do_commit {
     $dbv->{dbh}->commit if($dbv->{dbh});
 }
 
+=item do_rollback()
+
+Performs a rollback on the transaction where AutoCommit is disabled.
+
+=cut
+
+sub do_rollback {
+    my $dbv  = shift;
+    $dbv->{dbh}->rollback if($dbv->{dbh});
+}
+
 =item quote(string)
 
   string - string to be quoted
@@ -451,7 +466,7 @@ sub quote {
 
     # if the object doesnt contain a reference to a dbh object
     # then we need to connect to the database
-    $dbv = &_db_connect($dbv) if not $dbv->{dbh};
+    $dbv = _db_connect($dbv) if not $dbv->{dbh};
 
     $dbv->{dbh}->quote($_[0]);
 }
